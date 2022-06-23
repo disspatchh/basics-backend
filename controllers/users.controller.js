@@ -25,28 +25,22 @@ module.exports.usersController = {
 
   addUser: async (req, res) => {
     try {
-      const { name, email, password, date, gender, image } = req.body;
+      const { name, email, password, date, gender } = req.body;
 
       const hash = await bcrypt.hash(
         password,
         Number(process.env.BCRYPT_ROUNDS)
       );
 
-      console.log(1);
-      console.log(req.file);
-      const defaultImage =
-        "images/user/default/0604222022-114408_526-blank-avatar.jpg";
+      const user = await User.create({
+        name,
+        email,
+        password: hash,
+        date,
+        gender,
+      });
 
-      // const user = await User.create({
-      //   name,
-      //   email,
-      //   password: hash,
-      //   date,
-      //   gender,
-      // });
-
-
-      // res.json(user);
+      res.json(user);
     } catch (e) {
       res.status(401).json({ error: "Ошибка " + e.toString() });
     }
@@ -56,14 +50,14 @@ module.exports.usersController = {
     try {
       const { email, password } = req.body;
 
-      const candidate = await User.findOne({ email });
+      const candidate = await User.findOne({ email: email });
       if (!candidate) {
-        res.status(401).json({ error: "Неверный логин или пароль!" });
+        return res.status(401).json({ error: "Неверный логин или пароль!" });
       }
 
       const valid = await bcrypt.compare(password, candidate.password);
       if (!valid) {
-        res.status(401).json({ error: "Неверный логин или пароль!" });
+        return res.status(401).json({ error: "Неверный логин или пароль!" });
       }
 
       const payload = {
@@ -80,6 +74,58 @@ module.exports.usersController = {
       });
     } catch (e) {
       res.status(401).json({ error: "Ошибка " + e.toString() });
+    }
+  },
+
+  addAvatar: async (req, res) => {
+    try {
+      await User.findOneAndUpdate(
+        { _id: req.params.id },
+        {
+          image: req.file.path,
+        }
+      );
+
+      const user = await User.findById(req.params.id);
+      res.json(user);
+    } catch (error) {
+      res.status(401).json({ error: "Ошибка" + error.toString() });
+    }
+  },
+
+  changeName: async (req, res) => {
+    try {
+      await User.findOneAndUpdate(
+        { _id: req.user.id },
+        {
+          name: req.body.name,
+        }
+      );
+
+      const user = await User.findById(req.user.id);
+      res.json(user);
+    } catch (error) {
+      res.status(401).json({ error: "Ошибка" + error.toString() });
+    }
+  },
+
+  changePassword: async (req, res) => {
+    try {
+      const hash = await bcrypt.hash(
+        req.body.password,
+        Number(process.env.BCRYPT_ROUNDS)
+      );
+
+      await User.findOneAndUpdate(
+        { _id: req.user.id },
+        {
+          password: hash,
+        }
+      );
+      const user = await User.findById(req.user.id);
+      res.json(user);
+    } catch (error) {
+      res.status(401).json({ error: "Ошибка" + error.toString() });
     }
   },
 };

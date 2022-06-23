@@ -22,7 +22,10 @@ const userSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  image: String,
+  image: {
+    type: String,
+    default: "images/default/0604222022-114408_526-blank-avatar.jpg",
+  },
 });
 
 const User = mongoose.model("User", userSchema);
